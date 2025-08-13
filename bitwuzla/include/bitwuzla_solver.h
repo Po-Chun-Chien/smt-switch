@@ -206,6 +206,8 @@ class BzlaInterpolatingSolver : public BzlaSolver
   void reset() override;
   void reset_assertions() override;
 
+  static void test();
+
  protected:
   // assertions from the last interpolation query, indexed by the context level
   // (although one can get assertions using `bzla->get_assertions()`,

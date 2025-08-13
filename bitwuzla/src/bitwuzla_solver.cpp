@@ -800,6 +800,10 @@ Result BzlaInterpolatingSolver::get_sequence_interpolants(
         "get_sequence_interpolants.");
   }
 
+  // delete bzla;
+  // bzla = new bitwuzla::Bitwuzla(*tm, options);
+  // last_itp_query_assertions.clear();
+
   // count how many assertions can be reused
   size_t num_reused = 0;
   while (num_reused < last_itp_query_assertions.size()
@@ -889,6 +893,79 @@ void BzlaInterpolatingSolver::reset()
 {
   super::reset();
   last_itp_query_assertions.clear();
+}
+
+void BzlaInterpolatingSolver::test()
+{
+  bitwuzla::Options options;
+  options.set(bitwuzla::Option::PRODUCE_INTERPOLANTS, true);
+  bitwuzla::TermManager * tm = new bitwuzla::TermManager();
+  bitwuzla::Bitwuzla * bzla = new bitwuzla::Bitwuzla(*tm, options);
+
+  bitwuzla::Sort bv8 = tm->mk_bv_sort(8);
+  bitwuzla::Term x = tm->mk_const(bv8, "x");
+  bitwuzla::Term y = tm->mk_const(bv8, "y");
+  bitwuzla::Term z = tm->mk_const(bv8, "z");
+
+  bitwuzla::Term A, B, I;
+  bitwuzla::Result r;
+  A = tm->mk_term(bitwuzla::Kind::AND,
+                  { tm->mk_term(bitwuzla::Kind::BV_UGT, { x, y }),
+                    tm->mk_term(bitwuzla::Kind::BV_UGT, { y, z }) });
+  B = tm->mk_term(bitwuzla::Kind::BV_ULT, { x, z });
+
+  bzla->push(1);
+  bzla->assert_formula(A);
+  std::cout << "Pushed and asserted: " << A << std::endl;
+  bzla->push(1);
+  bzla->assert_formula(B);
+  std::cout << "Pushed and asserted: " << B << std::endl;
+  std::cout << "Asserted formulas:" << std::endl;
+  for (const auto & f : bzla->get_assertions())
+  {
+    std::cout << "\t" << f << std::endl;
+  }
+  r = bzla->check_sat();
+  std::cout << "Solving result: " << r << std::endl;
+  if (r == bitwuzla::Result::UNSAT)
+  {
+    I = bzla->get_interpolant({ A });
+    std::cout << "Interpolant: " << I << std::endl;
+  }
+  else
+  {
+    std::cout << "No interpolant" << std::endl;
+  }
+  std::cout << "=================" << std::endl;
+
+  bzla->pop(1);  // pop B
+  std::cout << "Pop" << std::endl;
+  std::cout << "Asserted formulas:" << std::endl;
+  for (const auto & f : bzla->get_assertions())
+  {
+    std::cout << "\t" << f << std::endl;
+  }
+
+  B = tm->mk_term(bitwuzla::Kind::BV_UGT, { x, z });
+  bzla->push(1);
+  bzla->assert_formula(B);
+  std::cout << "Pushed and asserted: " << B << std::endl;
+  std::cout << "Asserted formulas:" << std::endl;
+  for (const auto & f : bzla->get_assertions())
+  {
+    std::cout << "\t" << f << std::endl;
+  }
+  r = bzla->check_sat();
+  std::cout << "Solving result: " << r << std::endl;
+  if (r == bitwuzla::Result::UNSAT)
+  {
+    I = bzla->get_interpolant({ A });
+    std::cout << "Interpolant: " << I << std::endl;
+  }
+  else
+  {
+    std::cout << "No interpolant" << std::endl;
+  }
 }
 
 }  // namespace smt
